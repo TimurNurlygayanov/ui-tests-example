@@ -19,10 +19,11 @@
 #  pytest -v --driver Remote --capability browserName chrome tests/*
 #
 
-from pages import MainPage
+import pytest
+from pages.yandex import MainPage
 
 
-def t2est_check_main_search(web_browser):
+def test_check_main_search(web_browser):
     """ Make sure main search works fine. """
 
     page = MainPage(web_browser)
@@ -39,7 +40,7 @@ def t2est_check_main_search(web_browser):
         assert 'iphone' in title.lower(), msg
 
 
-def tes3t_check_wrong_input_in_search(web_browser):
+def test_check_wrong_input_in_search(web_browser):
     """ Make sure that wrong keyboard layout input works fine. """
 
     page = MainPage(web_browser)
@@ -57,6 +58,7 @@ def tes3t_check_wrong_input_in_search(web_browser):
         assert 'смартфон' in title.lower(), msg
 
 
+@pytest.mark.xfail(reason="Filter by price doesn't work")
 def test_check_sort_by_price(web_browser):
     """ Make sure that sort by price works fine.
 
