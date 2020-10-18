@@ -8,11 +8,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from elements import WebElement
-from elements import ManyWebElements
-
-import os
-
 
 class WebPage(object):
 
