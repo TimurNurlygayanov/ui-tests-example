@@ -1,15 +1,17 @@
 #!/usr/bin/python3
 # -*- encoding=utf8 -*-
-
+import logging
 import time
-from termcolor import colored
 
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+logger = logging.getLogger(__name__)
 
 
-class WebPage(object):
+class WebPage:
 
     _web_driver = None
 
@@ -83,8 +85,8 @@ class WebPage(object):
         source = ''
         try:
             source = self._web_driver.page_source
-        except:
-            print(colored('Con not get page source', 'red'))
+        except Exception as e:
+            logger.error('Cannot get page source\n%s', e)
 
         return source
 
@@ -127,11 +129,7 @@ class WebPage(object):
             time.sleep(sleep_time)
 
         # Get source code of the page to track changes in HTML:
-        source = ''
-        try:
-            source = self._web_driver.page_source
-        except:
-            pass
+        source = self.get_page_source()
 
         # Wait until page loaded (and scroll it, to make sure all objects will be loaded):
         while not page_loaded:
@@ -144,15 +142,11 @@ class WebPage(object):
                     self._web_driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
                     page_loaded = self._web_driver.execute_script("return document.readyState == 'complete';")
                 except Exception as e:
-                    pass
+                    logger.error(e)
 
             if page_loaded and check_page_changes:
                 # Check if the page source was changed
-                new_source = ''
-                try:
-                    new_source = self._web_driver.page_source
-                except:
-                    pass
+                new_source = self.get_page_source()
 
                 page_loaded = new_source == source
                 source = new_source
@@ -165,8 +159,8 @@ class WebPage(object):
                     bad_element = WebDriverWait(self._web_driver, 0.1).until(
                         EC.presence_of_element_located((By.XPATH, wait_for_xpath_to_disappear))
                     )
-                except:
-                    pass  # Ignore timeout errors
+                except TimeoutException as e:
+                    logger.error(e)
 
                 page_loaded = not bad_element
 
@@ -175,8 +169,8 @@ class WebPage(object):
                     page_loaded = WebDriverWait(self._web_driver, 0.1).until(
                         EC.element_to_be_clickable(wait_for_element._locator)
                     )
-                except:
-                    pass  # Ignore timeout errors
+                except TimeoutException as e:
+                    logger.error(e)
 
             assert k < timeout, 'The page loaded more than {0} seconds!'.format(timeout)
 

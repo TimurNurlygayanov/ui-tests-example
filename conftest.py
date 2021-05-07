@@ -4,10 +4,13 @@
 # This is example shows how we can manage failed tests
 # and make screenshots after any failed test case.
 
-import pytest
-import allure
+import logging
 import uuid
 
+import allure
+import pytest
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -48,7 +51,7 @@ def web_browser(request, selenium):
             browser.execute_script("document.body.bgColor = 'white';")
 
             # Make screen-shot for local debug:
-            browser.save_screenshot('screenshots/' + str(uuid.uuid4()) + '.png')
+            browser.save_screenshot(f'screenshots/{str(uuid.uuid4())}.png')
 
             # Attach screenshot to Allure report:
             allure.attach(browser.get_screenshot_as_png(),
@@ -56,13 +59,14 @@ def web_browser(request, selenium):
                           attachment_type=allure.attachment_type.PNG)
 
             # For happy debugging:
-            print('URL: ', browser.current_url)
-            print('Browser logs:')
+            logger.debug('URL: %s', browser.current_url)
+            logger.debug('Browser logs:')
             for log in browser.get_log('browser'):
-                print(log)
+                logger.debug(log)
 
-        except:
-            pass # just ignore any errors here
+        except Exception as e:
+            logger.debug('Something strange happen here: %s', e)
+            pass  # just ignore any errors here
 
 
 def get_test_case_docstring(item):
@@ -74,19 +78,16 @@ def get_test_case_docstring(item):
 
     if item._obj.__doc__:
         # Remove extra whitespaces from the doc string:
-        name = str(item._obj.__doc__.split('.')[0]).strip()
+        name = item._obj.__doc__.split('.')[0].strip()
         full_name = ' '.join(name.split())
 
         # Generate the list of parameters for parametrized test cases:
         if hasattr(item, 'callspec'):
             params = item.callspec.params
 
-            res_keys = sorted([k for k in params])
-            # Create List based on Dict:
-            res = ['{0}_"{1}"'.format(k, params[k]) for k in res_keys]
-            # Add dict with all parameters to the name of test case:
-            full_name += ' Parameters ' + str(', '.join(res))
-            full_name = full_name.replace(':', '')
+            full_name += ' [{0}]'.format(item.callspec.id)
+            res = ['{0}="{1}"'.format(k, params[k]) for k in sorted(params.keys())]
+            full_name += ' ({0})'.format(str(', '.join(res)))
 
     return full_name
 
@@ -113,6 +114,6 @@ def pytest_collection_finish(session):
             # automatically import test cases to test management system.
             if item._obj.__doc__:
                 full_name = get_test_case_docstring(item)
-                print(full_name)
+                logger.info(full_name)
 
         pytest.exit('Done!')

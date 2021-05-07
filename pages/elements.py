@@ -1,16 +1,18 @@
 #!/usr/bin/python3
 # -*- encoding=utf8 -*-
-
+import logging
 import time
-from termcolor import colored
 
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import ActionChains
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+logger = logging.getLogger(__name__)
 
 
-class WebElement(object):
+class WebElement:
 
     _locator = ('', '')
     _web_driver = None
@@ -34,8 +36,8 @@ class WebElement(object):
             element = WebDriverWait(self._web_driver, timeout).until(
                EC.presence_of_element_located(self._locator)
             )
-        except:
-            print(colored('Element not found on the page!', 'red'))
+        except TimeoutException as e:
+            logger.warning('Element not found on the page!\n%s', e)
 
         return element
 
@@ -48,13 +50,25 @@ class WebElement(object):
             element = WebDriverWait(self._web_driver, timeout).until(
                 EC.element_to_be_clickable(self._locator)
             )
-        except:
-            print(colored('Element not clickable!', 'red'))
+        except TimeoutException as e:
+            logger.warning('Element not clickable!\n%s', e)
 
         if check_visibility:
-            self.wait_until_not_visible()
+            self.wait_until_visible()
 
         return element
+
+    def wait_until_any_text_present(self, timeout: int = 10) -> str:
+        """ Wait until any text appears in element """
+        text = self.get_text()
+        finish_time = time.time() + timeout
+        while time.time() <= finish_time and not text:
+            time.sleep(0.1)
+            text = self.get_text()
+        else:
+            logger.warning("No text found in element: %s!", self._locator)
+
+        return text
 
     def is_clickable(self):
         """ Check is element ready for click or not. """
@@ -78,7 +92,7 @@ class WebElement(object):
 
         return False
 
-    def wait_until_not_visible(self, timeout=10):
+    def wait_until_visible(self, timeout=10):
 
         element = None
 
@@ -86,8 +100,8 @@ class WebElement(object):
             element = WebDriverWait(self._web_driver, timeout).until(
                 EC.visibility_of_element_located(self._locator)
             )
-        except:
-            print(colored('Element not visible!', 'red'))
+        except TimeoutException as e:
+            logger.error('Element not visible!\n%s', e)
 
         if element:
             js = ('return (!(arguments[0].offsetParent === null) && '
@@ -103,7 +117,7 @@ class WebElement(object):
                 iteration += 1
 
                 visibility = self._web_driver.execute_script(js, element)
-                print('Element {0} visibility: {1}'.format(self._locator, visibility))
+                logger.info('Element {0} visibility: {1}'.format(self._locator, visibility))
 
         return element
 
@@ -131,8 +145,8 @@ class WebElement(object):
 
         try:
             text = str(element.text)
-        except Exception as e:
-            print('Error: {0}'.format(e))
+        except ValueError as e:
+            logger.error('Error: {0}'.format(e))
 
         return text
 
@@ -146,7 +160,6 @@ class WebElement(object):
 
     def _set_value(self, web_driver, value, clear=True):
         """ Set value to the input element. """
-
         element = self.find()
 
         if clear:
@@ -210,7 +223,7 @@ class WebElement(object):
         try:
             element.send_keys(Keys.DOWN)
         except Exception as e:
-            pass  # Just ignore the error if we can't send the keys to the element
+            logger.warning(e)
 
     def delete(self):
         """ Deletes element from the page. """
@@ -238,8 +251,8 @@ class ManyWebElements(WebElement):
             elements = WebDriverWait(self._web_driver, timeout).until(
                EC.presence_of_all_elements_located(self._locator)
             )
-        except:
-            print(colored('Elements not found on the page!', 'red'))
+        except TimeoutException as e:
+            logger.warning('Elements not found on the page!\n%s', e)
 
         return elements
 
@@ -268,8 +281,8 @@ class ManyWebElements(WebElement):
 
             try:
                 text = str(element.text)
-            except Exception as e:
-                print('Error: {0}'.format(e))
+            except ValueError as e:
+                logger.error('Error: {0}'.format(e))
 
             result.append(text)
 

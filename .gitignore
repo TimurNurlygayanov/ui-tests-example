@@ -3,4 +3,5 @@ __pycache__
 .idea
 *.idea*
 *.pyc
-
+/venv
+*.log
