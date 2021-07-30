@@ -1,7 +1,7 @@
 import pytest
 from pages.auth_page import AuthPage
 
-def test_authorization(web_browser):
+def test_authorisation(web_browser):
 
     page = AuthPage(web_browser)
 
