@@ -83,5 +83,8 @@ def test_check_sort_by_price(web_browser):
     # Convert all prices from strings to numbers
     all_prices = [float(p.replace(' ', '')) for p in all_prices]
 
+    print(all_prices)
+    print(sorted(all_prices))
+
     # Make sure products are sorted by price correctly:
     assert all_prices == sorted(all_prices), "Sort by price doesn't work!"
